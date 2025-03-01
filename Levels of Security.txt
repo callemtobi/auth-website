@@ -1,0 +1,17 @@
+<-- ENCRYPTION LEVELS -->
+
+Level 1 - User authentication using email and password. 
+          Store passwords in plain text in db.
+          Stored in server level (atleast not in source code after inspecting html).
+
+Level 2 - Encryption (Database): Scrambling the original data.
+          NPM Package: mongoose-encryption 
+                    - Encryption [AES-256-CBC] - Advanced Encryption Standard, 
+                      encrypt sensitive data, such as financial transactions and 
+                      personal information. Algorithm.
+                    - Authentication [HMAC-SHA-512] - cryptographic process that 
+                      authenticates messages using a secret key and the SHA-512 hash function.
+                      A member of the SHA-2 (Secure Hash Algorithm 2).
+                      A secret key is mixed with the message data and hashes the result. 
+                      The hash value is mixed with the secret key again, and then hashed a second time.
+        
