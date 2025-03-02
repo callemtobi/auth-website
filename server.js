@@ -1,10 +1,8 @@
 import express from 'express';
 import mongoose, { Types } from 'mongoose';
 import ejs from 'ejs';
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import encrypt from 'mongoose-encryption';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 8000;
