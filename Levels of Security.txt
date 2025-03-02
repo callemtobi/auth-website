@@ -3,6 +3,7 @@
 Level 1 - User authentication using email and password. 
           Store passwords in plain text in db.
           Stored in server level (atleast not in source code after inspecting html).
+          NOT SAFE!
 
 Level 2 - Encryption (Database): Scrambling the original data.
           NPM Package: mongoose-encryption 
@@ -14,4 +15,23 @@ Level 2 - Encryption (Database): Scrambling the original data.
                       A member of the SHA-2 (Secure Hash Algorithm 2).
                       A secret key is mixed with the message data and hashes the result. 
                       The hash value is mixed with the secret key again, and then hashed a second time.
+          It's best to leave the email field unencrypted as we would need to search for users using their email.
+          The hacker will easily get access to your app.js if your website is hacked, which contains the API keys
+          and also the secret password plugin. Therefore... STILL NOT SAFEE!
+
+        - Environment Variables: Use the 'dotenv' package to hide secret passwords, API keys, etc.
+          However, git and github works on version control basis, so if you have a version (in history) where 
+          your API keys are visible. So as you create a new project, make sure to create .env file as well.
+      
+Level 3 - Hashing: MD5
+          - Remove encryption-plugin
+          - Its easy to convert passwords into hash (using hash fun()), but nearly impossible to convert 
+          the hash back in to password.
+          - The password is saved as hash in the database upon registering, and when the user tries to login with 
+          that password, the input password is converted to hash and compared with the hash password stored in DB.
+          - since MD5 is a 128 bit cryptographic function, there are 2^128-1 = 340282366920938463463374607431768211455 
+          possible combinations.
+
+          
+          
         

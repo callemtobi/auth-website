@@ -3,12 +3,14 @@ import mongoose, { Types } from 'mongoose';
 import ejs from 'ejs';
 import 'dotenv/config';
 import encrypt from 'mongoose-encryption';
+import md5 from 'md5';
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
 app.use(express.static('/public'));
 app.use(express.urlencoded({ extended: false}));
+app.use(express.json());
 app.set('view engine', 'ejs');
 
 // MongoDB Connection
@@ -25,12 +27,13 @@ const userSchema = new mongoose.Schema({
     password: {type: String, required: true}
 })
 
-// Mongoose encryption plugin
-const secret = process.env.SECRET_SECRET;
-userSchema.plugin(encrypt, {secret: secret, excludeFromEncryption: ['email']});
+// Mongoose-encryption plugin  --------> Remove for md5
+// const secret = process.env.SECRET_SECRET;
+// userSchema.plugin(encrypt, {secret: secret, excludeFromEncryption: ['email']});  
 
 const User = new mongoose.model('User', userSchema);
 
+// -------> ROUTES
 app.get('/', (req, res) => {
     res.render('home');
 })
@@ -53,7 +56,10 @@ app.route('/register')
                 console.log('--> User exists.');
                 return res.render('error', {message: 'User already exists', page: 'Try again', pageRoute: '/register'})
             } else {
-                const user = new User ({email, password});
+                const user = new User ({
+                    email: email, 
+                    password: md5(password)
+                });
                 // user.save();
         
                 User.insertOne(user)
@@ -82,10 +88,9 @@ app.route('/login')
             if (!userFind) {
                 return res.render('error', {message: 'You are not registered.', page: 'Register', pageRoute: '/register'});
             } else if (userFind) {
-                console.log('User data: ' + userFind)
                 console.log('DB password: ' + userFind.password)
-                console.log('Input password: ' + password)
-                if (userFind.password === password) {
+                console.log('Input password: ' + md5(password))
+                if (userFind.password === md5(password)) {
                     console.log('--------> Successful login!'); 
                     return res.redirect('/secrets');
                 }
