@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose, { Types } from 'mongoose';
 import ejs from 'ejs';
 import dotenv from 'dotenv';
+import encrypt from 'mongoose-encryption';
 
 dotenv.config();
 
@@ -25,6 +26,11 @@ const userSchema = new mongoose.Schema({
     email: {type: String, required: true },
     password: {type: String, required: true}
 })
+
+// Mongoose encryption plugin
+const secret = process.env.SECRET_SECRET;
+userSchema.plugin(encrypt, {secret: secret, excludeFromEncryption: ['email']});
+
 const User = new mongoose.model('User', userSchema);
 
 app.get('/', (req, res) => {
@@ -39,7 +45,7 @@ app.route('/register')
         const { email, password} = req.body;
 
         if (!email || !password) {
-            return res.render('error', {message: 'All fields are required!'})
+            return res.render('error', {message: 'All fields are required!', page: 'Try again', pageRoute: '/register'})
         }
         
         // Existing User Check
@@ -47,7 +53,7 @@ app.route('/register')
         .then((userExists) => {
             if (userExists) {
                 console.log('--> User exists.');
-                return res.render('error', {message: 'User already exists'})
+                return res.render('error', {message: 'User already exists', page: 'Try again', pageRoute: '/register'})
             } else {
                 const user = new User ({email, password});
                 // user.save();
@@ -59,7 +65,7 @@ app.route('/register')
             }
 
         })
-        .catch(err => {console.log(err); res.render('error', {message: 'An error has occurred while registering!'})})
+        .catch(err => {console.log(err); res.redirect('/error')})
 
     })
     // LOGIN ROUTE
@@ -70,22 +76,22 @@ app.route('/login')
     .post((req, res) => {
         const { email, password } = req.body;
         if (!email || !password) {
-            return res.render('error', {message: 'All fields are required!'})
+            return res.render('error', {message: 'All fields are required!', page: 'Try again', pageRoute: '/login'})
         }
         
-        const user = new User ({ email, password });
-        console.log(user)
-        
-        User.findOne({ email: email})
+        User.findOne({email: email})
         .then((userFind) => {
             if (!userFind) {
-                return res.render('error', {message: 'You are not registered! Kindly register.'});
+                return res.render('error', {message: 'You are not registered.', page: 'Register', pageRoute: '/register'});
             } else if (userFind) {
+                console.log('User data: ' + userFind)
+                console.log('DB password: ' + userFind.password)
+                console.log('Input password: ' + password)
                 if (userFind.password === password) {
                     console.log('--------> Successful login!'); 
                     return res.redirect('/secrets');
                 }
-                return res.render('error', {message: 'Invalid email or password'});
+                return res.render('error', {message: 'Invalid password', page: 'Try again', pageRoute: '/login'});
             }
         })
         .catch((err) => {console.log('--------> Error while logging! ' + err); res.redirect('/error')})  
@@ -94,7 +100,7 @@ app.get('/secrets', (req, res) => {
     res.render('secrets');
 })
 app.get('/error', (req, res) => {
-    res.render('error', {message: '404 - The Page cannot be found'})
+    res.render('error', {message: '404 - The Page cannot be found', page: 'Go To Homepage', pageRoute: '/'})
 })
 
 app.listen(PORT, () => {
