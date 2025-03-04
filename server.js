@@ -4,9 +4,11 @@ import ejs from 'ejs';
 import 'dotenv/config';
 import encrypt from 'mongoose-encryption';
 import md5 from 'md5';
+import bcrypt from 'bcrypt';
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+const saltRounds = 10;
 
 app.use(express.static('/public'));
 app.use(express.urlencoded({ extended: false}));
@@ -56,18 +58,17 @@ app.route('/register')
                 console.log('--> User exists.');
                 return res.render('error', {message: 'User already exists', page: 'Try again', pageRoute: '/register'})
             } else {
-                const user = new User ({
-                    email: email, 
-                    password: md5(password)
-                });
-                // user.save();
-        
-                User.insertOne(user)
-                .then((data) => {console.log('--------> You have been registered!' + data)})
-                .catch((err) => {console.log('--------> Error while registering! ' + err); res.send('You have not been registered! Try again.')})
-                res.redirect('/login')
+                bcrypt.hash(password, saltRounds, function(err, hash) {
+                    const user = new User ({
+                        email: email,
+                        password: hash
+                    });
+                    User.insertOne(user)
+                    .then((data) => {console.log('--------> You have been registered!' + data)})
+                    .catch((err) => {console.log('--------> Error while registering! ' + err); res.send('You have not been registered! Try again.')})
+                    res.redirect('/login')
+                })
             }
-
         })
         .catch(err => {console.log(err); res.redirect('/error')})
 
@@ -88,13 +89,17 @@ app.route('/login')
             if (!userFind) {
                 return res.render('error', {message: 'You are not registered.', page: 'Register', pageRoute: '/register'});
             } else if (userFind) {
-                console.log('DB password: ' + userFind.password)
-                console.log('Input password: ' + md5(password))
-                if (userFind.password === md5(password)) {
-                    console.log('--------> Successful login!'); 
-                    return res.redirect('/secrets');
-                }
-                return res.render('error', {message: 'Invalid password', page: 'Try again', pageRoute: '/login'});
+                bcrypt.compare(password, hash, function(err, hash) {
+                    console.log('DB password: ' + userFind.password)
+                    console.log('Input password: ' + hash)
+    
+                    if (userFind.password === hash) {
+                        console.log(`Hash + Salt password: ${hash}`)
+                        console.log('--------> Successful login!'); 
+                        return res.redirect('/secrets');
+                    }
+                    return res.render('error', {message: 'Invalid password', page: 'Try again', pageRoute: '/login'});
+                })
             }
         })
         .catch((err) => {console.log('--------> Error while logging! ' + err); res.redirect('/error')})  
