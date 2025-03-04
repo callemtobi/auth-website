@@ -23,7 +23,7 @@ Level 2 - Encryption (Database): Scrambling the original data.
           However, git and github works on version control basis, so if you have a version (in history) where 
           your API keys are visible. So as you create a new project, make sure to create .env file as well.
       
-Level 3 - Hashing: MD5
+Level 3 - Hashing [MD5]: Running sensitive data (password) through a hash function, we get a hash.
           - Remove encryption-plugin
           - Its easy to convert passwords into hash (using hash fun()), but nearly impossible to convert 
           the hash back in to password.
@@ -32,6 +32,14 @@ Level 3 - Hashing: MD5
           - since MD5 is a 128 bit cryptographic function, there are 2^128-1 = 340282366920938463463374607431768211455 
           possible combinations.
 
+Level 4 - Salting and Hashing: adding a unique set of random characters to the password, and then hashing it -> db.
+          - Using [bcrypt] > [MD5]: It has a concept of Salt Rounds. The more salt rounds, the saltier it is, the 
+          harder it is to hack. The first round contains: 
+                Round 1 : PASSWORD + SALT ----HASH FUNC---> HASH
+                Round 2 : HASH + SALT(SAME) ----HASH FUNC---> HASH... and so on...
+
+Level 5 - 
+          
           
           
         
