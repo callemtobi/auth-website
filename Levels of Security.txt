@@ -38,7 +38,13 @@ Level 4 - Salting and Hashing: adding a unique set of random characters to the p
                 Round 1 : PASSWORD + SALT ----HASH FUNC---> HASH
                 Round 2 : HASH + SALT(SAME) ----HASH FUNC---> HASH... and so on...
 
-Level 5 - 
+Level 5 - Cookies: are used to save browsing sessions (online amazon shopping cart example). It goes beyond just saving 
+          your last action on the website. That particular website (amazon) adds cookies to the browser, so when you 
+          visit a different site, it knows what you searched for on amazon, who you are, and what you wanted to buy.
+          [Retargeting ads].
+          Sessions: a period of time where browser interacts with a server. 
+          Log into a website -> session start -> cookie created. 
+          Authentication is also managed with cookies. So you are not logged out. When you log out, session -> ends. 
           
           
           
