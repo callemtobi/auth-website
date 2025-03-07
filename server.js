@@ -2,18 +2,26 @@ import express from 'express';
 import mongoose, { Types } from 'mongoose';
 import ejs from 'ejs';
 import 'dotenv/config';
-import encrypt from 'mongoose-encryption';
-import md5 from 'md5';
-import bcrypt from 'bcrypt';
+import session from 'express-session';
+import passport from 'passport';
+import passportLocalMongoose from 'passport-local-mongoose';
 
 const app = express();
 const PORT = process.env.PORT || 8000;
-const saltRounds = 10;
 
 app.use(express.static('/public'));
-app.use(express.urlencoded({ extended: false}));
+app.use(express.urlencoded({ extended: true}));
 app.use(express.json());
 app.set('view engine', 'ejs');
+// Express session middleware --------- [1]
+app.use(session({
+    secret: process.env.SECRET_SECRET,
+    resave: false,
+    saveUninitialized: false
+}))
+// Passport middleware ---------------- [2]
+app.use(passport.initialize());
+app.use(passport.session());
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI);
@@ -25,15 +33,19 @@ mongoose.connection.once('open', () => {
 
 // Database Schema
 const userSchema = new mongoose.Schema({
-    email: {type: String, required: true },
-    password: {type: String, required: true}
+    email: {type: String, required: true }
+    // password: {type: String, required: true}
 })
-
-// Mongoose-encryption plugin  --------> Remove for md5
-// const secret = process.env.SECRET_SECRET;
-// userSchema.plugin(encrypt, {secret: secret, excludeFromEncryption: ['email']});  
+// (Hashing and salting password) ---------- [3]
+userSchema.plugin(passportLocalMongoose, {usernameField: 'email'});
 
 const User = new mongoose.model('User', userSchema);
+
+// Passport Local Configuration ----------- [4]
+passport.use(User.createStrategy());
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 // -------> ROUTES
 app.get('/', (req, res) => {
@@ -46,32 +58,16 @@ app.route('/register')
     })
     .post((req, res) => {
         const { email, password} = req.body;
+        console.log(`${email} :::: ${password}`)
 
-        if (!email || !password) {
-            return res.render('error', {message: 'All fields are required!', page: 'Try again', pageRoute: '/register'})
-        }
-        
-        // Existing User Check
-        User.findOne({email})
-        .then((userExists) => {
-            if (userExists) {
-                console.log('--> User exists.');
-                return res.render('error', {message: 'User already exists', page: 'Try again', pageRoute: '/register'})
-            } else {
-                bcrypt.hash(password, saltRounds, function(err, hash) {
-                    const user = new User ({
-                        email: email,
-                        password: hash
-                    });
-                    User.insertOne(user)
-                    .then((data) => {console.log('--------> You have been registered!' + data)})
-                    .catch((err) => {console.log('--------> Error while registering! ' + err); res.send('You have not been registered! Try again.')})
-                    res.redirect('/login')
+        User.register(({email: email}), password, function(err, user) {
+            if (err) { console.log('-----> Error: ' + err); return res.redirect('/')}
+            else {
+                passport.authenticate('local')(req, res, () => {
+                    res.redirect('/secrets')
                 })
             }
         })
-        .catch(err => {console.log(err); res.redirect('/error')})
-
     })
     // LOGIN ROUTE
 app.route('/login')
@@ -79,32 +75,29 @@ app.route('/login')
         res.render('login');
     })
     .post((req, res) => {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            return res.render('error', {message: 'All fields are required!', page: 'Try again', pageRoute: '/login'})
-        }
-        
-        User.findOne({email: email})
-        .then((userFind) => {
-            if (!userFind) {
-                return res.render('error', {message: 'You are not registered.', page: 'Register', pageRoute: '/register'});
-            } else if (userFind) {
-                bcrypt.compare(password, userFind.password, function(err, result) {
-                    console.log('DB password: ' + userFind.password)
-                    console.log('Input password: ' + password)
-
-                    if (result === true) {
-                        console.log('--------> Successful login!'); 
-                        return res.redirect('/secrets');
-                    }
-                    return res.render('error', {message: 'Invalid password', page: 'Try again', pageRoute: '/login'});
-                })
-            }
+        const { email, password} = req.body;
+        const user = new User({
+            email: email,
+            password: password
         })
-        .catch((err) => {console.log('--------> Error while logging! ' + err); res.redirect('/error')})  
+
+        req.login(user, function(err) {
+            if (err) { return next(err); }
+            return res.redirect('/secrets');
+          });
+        // passport.authenticate('local', {failureRedirect: '/error'}), (req, res) => {
+        //     res.redirect('/secrets');
+        // }
     })
 app.get('/secrets', (req, res) => {
-    res.render('secrets');
+    if (req.isAuthenticated) { res.render('secrets');}
+    else {console.log('User not authenticated'); res.redirect('/login')} 
+})
+app.get('/logout', (req, res) => {
+    req.logout(function(err) {
+        if (err) { return next(err); }
+        res.redirect('/');
+    });
 })
 app.get('/error', (req, res) => {
     res.render('error', {message: '404 - The Page cannot be found', page: 'Go To Homepage', pageRoute: '/'})
