@@ -84,13 +84,10 @@ app.route('/login')
         req.login(user, function(err) {
             if (err) { return next(err); }
             return res.redirect('/secrets');
-          });
-        // passport.authenticate('local', {failureRedirect: '/error'}), (req, res) => {
-        //     res.redirect('/secrets');
-        // }
+        });
     })
 app.get('/secrets', (req, res) => {
-    if (req.isAuthenticated) { res.render('secrets');}
+    if (req.isAuthenticated()) { res.render('secrets');}
     else {console.log('User not authenticated'); res.redirect('/login')} 
 })
 app.get('/logout', (req, res) => {
