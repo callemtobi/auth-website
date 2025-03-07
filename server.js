@@ -89,12 +89,11 @@ app.route('/login')
             if (!userFind) {
                 return res.render('error', {message: 'You are not registered.', page: 'Register', pageRoute: '/register'});
             } else if (userFind) {
-                bcrypt.compare(password, hash, function(err, hash) {
+                bcrypt.compare(password, userFind.password, function(err, result) {
                     console.log('DB password: ' + userFind.password)
-                    console.log('Input password: ' + hash)
-    
-                    if (userFind.password === hash) {
-                        console.log(`Hash + Salt password: ${hash}`)
+                    console.log('Input password: ' + password)
+
+                    if (result === true) {
                         console.log('--------> Successful login!'); 
                         return res.redirect('/secrets');
                     }
